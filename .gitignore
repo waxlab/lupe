@@ -1,0 +1,11 @@
+/luarocks
+/lua
+/lua_modules
+/.luarocks
+/out
+*.o
+**/*.o
+*.so
+**/*.so
+*.a
+**/*.a
