@@ -66,16 +66,12 @@ do
   help.install = 'Install the Lua files and compiled binaries and libraries'
   function make.install (config)
     local config = readconf('config.lua')
-    if config.lib and #config.lib > 0 then
-      x( 'cp -rf lib/* %q', env('INST_LUADIR') )
-    end
+
+    x( 'cp -rf lib/* %q || :', env('INST_LUADIR') )
+    x( 'cp -rf bin/* %q || :', env('INST_BINDIR') )
 
     if config.clib and #config.clib > 0 then
       x( 'cp -rf out/lib/* %q', env('INST_LIBDIR') )
-    end
-
-    if config.bin and #config.bin > 0 then
-      x( 'cp -rf bin/*lua %q', env('INST_BINDIR') )
     end
 
     if config.cbin and #config.cbin > 0 then
@@ -141,18 +137,22 @@ do
   local
   function clib(config)
     local cmd = '@cc @flags @src -so @libout'
-    if config.clib and #config.clib > 0 then x('mkdir -p out/lib') end
-    for _,o in ipairs(config.clib) do
-      x((cmd:gsub('@(%w+)',function(p) return cc[p](o) end)))
+    if config.clib and #config.clib > 0 then
+      x('mkdir -p out/lib')
+      for _,o in ipairs(config.clib) do
+        x((cmd:gsub('@(%w+)',function(p) return cc[p](o) end)))
+      end
     end
   end
 
   local
   function cbin(config)
     local cmd = '@cc @flags @src -o @binout'
-    if config.cbin and #config.cbin > 0 then x('mkdir -p out/bin') end
-    for _,o in ipairs(config.cbin) do
-      x((cmd:gsub('@(%w+)',function(p) return cc[p](o) end)))
+    if config.cbin and #config.cbin > 0 then
+      x('mkdir -p out/bin')
+      for _,o in ipairs(config.cbin) do
+        x((cmd:gsub('@(%w+)',function(p) return cc[p](o) end)))
+      end
     end
   end
 
