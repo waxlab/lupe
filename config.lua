@@ -1,11 +1,7 @@
 bin = { }
-
-clib = {
-
-}
-
+clib = { }
 cbin = {
-  { out = 'luft', src = 'luft-main.c' }
+  { "atmos", "atmos.c" }
 }
 
 

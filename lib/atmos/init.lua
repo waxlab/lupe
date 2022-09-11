@@ -7,10 +7,9 @@ if not _G.arg then
   end
   _G.arg = arg
 end
-for i,v in pairs(arg) do print(i, v) end
 
-if (os.getenv('LUFT_SHELL')) then
-  require('luft.core.shell')
+if os.getenv 'atmos_SHELL' then
+  require 'atmos.coresh'
 else
-  require('luft.core.command')
+  require 'atmos.corecmd'
 end

@@ -1,77 +1,129 @@
-![Luft](https://repository-images.githubusercontent.com/531184514/2f3d2440-66d9-4e33-b7aa-404d42de8b84)
+![Atmos](https://repository-images.githubusercontent.com/531184514/f0ec9a0e-bd24-4625-92e6-e4d25e6b0447)
 
-Luft - Lua apps and packages as directory trees
+Atmos - Lua apps and packages as directory trees
 ===============================================
 
-> In Germany *luft* means air.
->
-> In Iceland *loft* is related to the sky or heaven.
->
-> In England, *lift* is to move upwards.
->
-> In Lua, __*Luft*__ is make your code go beyond...
+Quickstart
+----------
 
-Luft tries to relate the best things to allow reasoning power while building
-good software in a malleable way. How it is possible?
-
-* Create a directory that becomes a package and add other packages inside it
-as dependencies.
-* Make a runnable package tree and link it on the path running as a system command.
-* Tuned up require to find the local Lua modules beside the system Lua modules.
-* Tuned local requires to find only modules related to current module
-* A set of tools to help loading files only from current package.
-way.
-* If you have the directory and Git you can freely distribute or code,
-publicly or privately. The freedom to build your code with no hurry and no mess.
-
-Luft consists in:
-
-* A file named `index.luft` on the root of the Luft tree. It is used as
-milestone when navigating through packages and also to identify the package
-as runnable.
-* An interpreter to be used as `#!/bin/env luft` to be hashbanged on
-`index.luft`. It allows the folder to run with the correct Lua version.
-* A manager... the self `luft` binary, with abilities to setup and (perhaps)
-update a Luft tree.
-* The `luft` Lua modules, that enriches the Lua way of requiring modules and
-add helpers to allow file loading (any asset of your project) inside the
-package.
+1. Create a folder/directory
+2. enter in it
+3. run `atmos init`
+4. explore the structure created inside the folder and
+   edit the files as you want to.
 
 
-The Luft file system
--------------------
+The standard Atmos file system
+------------------------------
 ```
 yourpkg
- │ 
- ├─ etc/  <··· Here are your package assets
+ │
+ ├─ bin  <··· The place with your Lua scripts
+ │   ├─ main.lua
+ │   ╰─ somecommand.lua
+ │
+ ├─ etc/  <··· Where the confs of your package are
  │   ├─ template.tpl
  │   ╰─ anything.jpg
  │
- ├─ lib/  <··· Here comes your package modules
- │   ├─ a.lua ··· to be required as yourpkg.a
- │   ╰─ b.lua ... to be required as yourpkg.b
+ ├─ lib/  <··· Strictly Lua modules
+ │   ├─ a.lua ··· got as require("yourpkg.a")
+ │   ╰─ b.lua ... git as require("yourpkg.b")
  │
- ├─ sub/  <··· Your dependencies go here
+ ├─ dep/  <··· Your dependencies go here
  │   ╰─ otherpkg/
  │       ├─ etc/
- │       ├─ lib/
- │       ├─ sub/
- │       ╰─ index.luft
+ │       ╰─ lib/
  │
- ╰ index.luft
+ ╰ atmos
 ```
+
 * `etc` folder is the place where you can add yout project assets. For a console
 program you can have files containing colorschemes, or data skeleton, or any
 other configuration you want to. Like in the Unix etc directory. If the project
 is related to a website, here you can put your templates, css, js etc.
-* `lib` folder contains the modules of your package. These modules can be required
-using the package folder name (in case yourpkg) or relatively to itself when
-your package is intended or use inside other packages. See more in the documentation
-about `require.self()`.
-* `sub` is where you can put the dependecies of your package. The name of the folder
-is the name that will be used when doing requires. To require from these dependencies
-you should use the `require.sub()`
+* `lib` folder contains the modules of your package. The modules contained in this
+folder have precedence over the instaled out of atmos folder. The way you see the
+structure in this folder is the way you can require them (the simple Lua way)
+* `dep` stands for dependencies. Here is where your dependencies are installed.
 
-The functions `require.self()` and `require.sub()` gives a high control of what
-you really want to require. You can use two versions of same packages in your
-project.
+The Atmos root file
+-------------------
+
+This file marks the root of the Atmos system structure, and contains important
+information about the system:
+
+* `lua_version = LIST` inform for which Lua versions it is intended to work.
+When running the Atmos it will follow this list in order finding the correct
+Lua version for your application. Ex: `lua_version={"5.4","5.3"}`
+
+* `dep = INDEX` is a table where the keys are the name of the package and the
+value is a string or a table. If it is only a string, on update it will download
+and update the git resository at the url. If it is a table Atmos will consider
+the information provided there to choose the right Git reference (branch or tag)
+as well as if it shouldnt do a shallow clone. Ex:
+
+```lua
+dep = {
+    extpkg = "https://gitsite/user/extpkg",
+    otherext = { "https://gitsite/user/otherext", dir="src/lua", ref="dev" },
+}
+```
+
+Executable Atmos folder
+-----------------------
+
+As you see, when you execute `atmos init` a `./bin/main.lua` file is created.
+If anywhere from your system you run `atmos /your/proj/dir` it will look
+for the `/your/proj/dir/bin/main.lua` and execute it.
+
+You may also link the `/your/proj/dir/bin/main.lua` to your system `$PATH`, eg:
+
+`ln -sf /your/proj/dir/bin/main.lua /usr/local/bin/yourproj`
+
+Now, when you run `yourproj` from anywhere on your system it will correctly
+execute the `main.lua` file resolving all the inner dependencies of your Atmos
+folder.
+
+Creating more than one Lua executable script inside Atmos
+---------------------------------------------------------
+
+You can add multiple Lua executable scripts inside the `./bin` folder under
+your atmos project. They just need to be executable (with `chmod +x`) and
+has the hasbang on the first line like `#!/usr/bin/env atmos`.
+
+
+Why don't use only Luarocks?
+----------------------------
+
+Luarocks is great for installing rocks in system or on a folder. It really
+rocks when writting packages in C and compiled for Lua.
+
+But things become complex when you want to include private dependencies or
+develop multiple packages at the same time... Well, I won't describe all
+the process here, but feel free to try and discover the complexity.
+
+Here comes the idea of Atmos:
+
+- Provide a simple way to quickstart a project with Lua only files.
+- Resolve the path in a way that you can just drop your project folder
+anywhere and start using, with no need to install it on a fixed folder
+or handle manually the `package.path`.
+- Provide a finder for the right name of the Lua binary in different
+systems.
+- Allow the development of multiple packages: you can configure the
+`deps` entry to not do a shallow clone of a git repository. So you
+can write your code and improve other packages as you go.
+- You don't need to update a rockspec everytime you create a Lua file,
+neither rebuild your project.
+- You can use code from repositories that don't have a rockspec.
+
+Next steps
+----------
+
+1. Allow more isolated usage with a option to block external paths
+from `package.path` and wrap Luarocks call to install under the Atmos
+folder.
+2. Dependency resolution for packages installed from a Git repository.
+
+

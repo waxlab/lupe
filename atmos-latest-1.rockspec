@@ -1,25 +1,30 @@
-package = "luft"
+package = "atmos"
 version = "latest-1"
 
 source = {
-   url = "git+ssh://git@github.com/luawax/luft.git"
+   url = "git+ssh://git@github.com/luawax/atmos.git"
 }
 
 description = {
-   homepage   = "https://github.com/luawax/luft",
+   homepage   = "https://github.com/luawax/atmos",
    license    = "MIT",
-   summary    = "Lua Folder Tree",
+   summary    = "Environment for Lua",
    maintainer = "Thadeu de Paula",
    detailed   = [[Use directories as standalone Lua apps or packages]],
 }
 
+dependencies = { "lua >= 5.1, < 5.5" }
+
 local build_vars
   = 'ROCKVER="'..version..'" '
   ..'CC="$(CC)" '
+  ..'LD="$(LD)" '
   ..'CFLAGS="$(CFLAGS)" '
   ..'LIBFLAG="$(LIBFLAG)" '
   ..'LUA_BINDIR="$(LUA_BINDIR)" '
   ..'LUA_INCDIR="$(LUA_INCDIR)" '
+  ..'OBJ_EXTENSION="$(OBJ_EXTENSION)" '
+  ..'LIB_EXTENSION="$(LIB_EXTENSION)" '
   ..'LUA="$(LUA)" '
 
 local install_vars

@@ -1,20 +1,29 @@
 local make, help = {},{}
-
+local DEBUG = os.getenv('DEBUG')
+local OBJ_EXTENSION = os.getenv('OBJ_EXTENSION')
+local LIB_EXTENSION = os.getenv('LIB_EXTENSION')
 
 -----------------------------------------------------------
 -- HELPERS ------------------------------------------------
 -----------------------------------------------------------
 local _x = os.execute
 local function x(cmd, ...)
-  local cmd=cmd:format(...)
-  print(cmd, ...)
+  cmd=cmd:format(...)
+  if DEBUG then print(cmd, ...) end
   assert(_x(cmd))
 end
-
-local
-function totable(str)
-
+local function isdir(path)
+  local p = io.popen(('file -i %q'):format(path),'r')
+  if p then
+    local mime = p:read('*a')
+    mime = mime:gsub('^[^:]*:%s*',''):gsub('%s*;[^;]*$','')
+    if mime == 'inode/directory' then
+      return true
+    end
+  end
+  return false
 end
+
 if _VERSION == "Lua 5.1" then
   function _load(str)
     local t = {}
@@ -29,7 +38,8 @@ else
     local t = {}
     local fn, err = load(str, nil, 't')
     if err then return nil, err end
-    uvj(load(str, nil, 't'),1,function() return t end, 1)
+
+    uvj(fn,1,function() return t end, 1)
     fn()
     return t
   end
@@ -65,17 +75,21 @@ do
 
   help.install = 'Install the Lua files and compiled binaries and libraries'
   function make.install (config)
-    local config = readconf('config.lua')
-
-    x( 'cp -rf lib/* %q || :', env('INST_LUADIR') )
-    x( 'cp -rf bin/* %q || :', env('INST_BINDIR') )
+    local verbose = DEBUG and 'v' or ''
+    config = readconf('config.lua')
+    if isdir('lib') then
+      x( 'cp -rf%s lib/* %q || :', verbose, env('INST_LUADIR') )
+    end
+    if isdir('bin') then
+      x( 'cp -rf%s bin/* %q || :', verbose, env('INST_BINDIR') )
+    end
 
     if config.clib and #config.clib > 0 then
-      x( 'cp -rf out/lib/* %q', env('INST_LIBDIR') )
+      x( 'cp -rf%s out/lib/* %q', verbose, env('INST_LIBDIR') )
     end
 
     if config.cbin and #config.cbin > 0 then
-      x( 'cp -rf out/bin/* %q', env('INST_BINDIR') )
+      x( 'cp -rf%s out/bin/* %q', verbose, env('INST_BINDIR') )
     end
   end
 end
@@ -100,18 +114,24 @@ do
   end
 
   function cc.flags(o)
+    local debug = os.getenv("CC_DEBUG") and ' -g ' or ''
     if o.flags then
       if type(o.flags) == 'table'
-        then return table.concat(o.flags, ' ')
-        else return tostring(o.flags)
+        then return debug..table.concat(o.flags, ' ')
+        else return debug..tostring(o.flags)
       end
     end
-    return env('CFLAGS', '-Wall -Wextra -O2 -fPIC -fdiagnostic-color=always')
+    return env('CFLAGS', debug..'-Wall -Wextra -O2 -fPIC -fdiagnostic-color=always')
   end
 
-  function cc.src(o)
-    local t = {}
-    local f = type(o.src) == 'table' and o.src or { tostring(o.src) }
+
+  function cc.debug(item)
+    return DEBUG and '-g' or ''
+  end
+
+  function cc.src(item)
+    local t, f = {}, nil
+    f = type(item[2]) == 'table' and item[2] or { tostring(item[2]) }
 
     for i,v in ipairs(f) do
       if v:find('%.%.')
@@ -124,30 +144,57 @@ do
   end
 
 
-  function cc.libout(o)
-    local dir = 'out/lib/'..(o.out:gsub('%.?[^.]+$',''):gsub('%.','/'))
-    local file = o.out:gsub('.-%.?([^.]+)$','%1')..'.so'
-    x('mkdir -p %q', dir)
-    return dir..'/'..file
+  function cc.sharedflag()
+    return env('LIBFLAG', '-shared')
   end
 
-  function cc.binout(o) return 'out/bin/'..o.out end
+  function cc.incdir()
+    local incdir = env('LUA_INCDIR',nil)
+    return incdir and '-I'..incdir or ''
+  end
+
+
+  function cc.srcout(item)
+    if item:find('%.%.') then
+      error(('invalid filename: %q'):format(item))
+    end
+    return table.concat {
+      ' -c src/',item,
+      ' -o src/',(item:gsub('[^.]+$',OBJ_EXTENSION))
+    }
+  end
+
+  function cc.libout(item)
+    local path = 'out/lib/'..item[1]:gsub('%.','/') -- 'wax.x' to 'wax/x'
+    x('mkdir -p %q', path:gsub('/[^/]*$',''))
+    local libfile = path..'.'..LIB_EXTENSION
+    return libfile;
+  end
+
+  function cc.binout(o) return 'out/bin/'..o[1] end
 
 
   local
   function clib(config)
-    local cmd = '@cc @flags @src -so @libout'
+    local cmd_obj   = '@cc @debug @flags @incdir @srcout'
+    local cmd_shobj = '@cc @sharedflag -o @libout @src'
     if config.clib and #config.clib > 0 then
       x('mkdir -p out/lib')
-      for _,o in ipairs(config.clib) do
-        x((cmd:gsub('@(%w+)',function(p) return cc[p](o) end)))
+      for _,item in ipairs(config.clib) do
+        for s, src in ipairs(item[2]) do
+          -- compile each .c to .o
+          x((cmd_obj:gsub('@(%w+)', function(p) return cc[p](src) end)))
+          -- replace the name from .c to .o
+          item[2][s] = src:gsub('[^.]$',OBJ_EXTENSION)
+        end
+        x((cmd_shobj:gsub('@(%w+)',function(p) return cc[p](item) end)))
       end
     end
   end
 
   local
   function cbin(config)
-    local cmd = '@cc @flags @src -o @binout'
+    local cmd = '@cc @debug @incdir @flags @src -o @binout'
     if config.cbin and #config.cbin > 0 then
       x('mkdir -p out/bin')
       for _,o in ipairs(config.cbin) do
