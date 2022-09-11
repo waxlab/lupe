@@ -13,12 +13,15 @@
 
 
 struct {
-  int len;
-  struct {
-    char name[10]; /* Ex: 5.4 */
-    char alt[10];  /* Ex: 54 (common in non-Linux */
-  } item[6];
-} lua_ver;
+  char bin[PATH_MAX]; /* Lua binary path */
+  char *version;      /* Lua binary version found */
+
+  /* List containing the required Lua versions */
+  int verc; struct {
+    char name[4]; /* Ex: 5.4 */
+    char alt[10]; /* Ex: 54 (BSD and other Unixes) */
+  } verv[6];
+} Lua;
 
 
 struct {
@@ -26,14 +29,14 @@ struct {
   int  len;
 } path_list;
 
-static char luft_script[PATH_MAX] = "\0";
-static char luft_root[PATH_MAX]   = "\0";
-static char luft_file[PATH_MAX]   = "\0";
+static char luft_script[PATH_MAX] = "\0"; /* a shbanged Lua file with luft*/
+static char luft_file[PATH_MAX]   = "\0"; /* the tre conf */
+static char luft_root[PATH_MAX]   = "\0"; /* the tree root directory */
 static char ERROR[1024];
 
 /* matches the line version */
 static char const *lv_exp =
-  "__VERSIONS = %*[\"{ ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]";
+  "lua = %*[\"{ ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]";
 
 
 static void luft_error(char *fmt, ...) {
@@ -79,8 +82,8 @@ static void validate_lua_ver() {
   int  ai       = 0;
   char *name;
 
-  for(int v=0; v < lua_ver.len; v++) {
-    name=lua_ver.item[v].name;
+  for(int v=0; v < Lua.verc; v++) {
+    name=Lua.verv[v].name;
     for(int c=0; c<strlen(name); c++) {
       if (name[c] >= '0' && name[c] <= '9') {
         alt[ai++] = name[c];
@@ -89,7 +92,7 @@ static void validate_lua_ver() {
       if (name[c] != '.') luft_error("Invalid version %s", name);
     }
     alt[ai]='\0';
-    strcpy(lua_ver.item[v].alt,alt);
+    strcpy(Lua.verv[v].alt,alt);
   }
 }
 
@@ -102,20 +105,17 @@ static void required_lua() {
   size_t linelen = 0;
   int    linenum = 0;
   int    vv = 0;
-  lua_ver.item[0].name[0] = '\0';
-  lua_ver.len = 0;
+  Lua.verv[0].name[0] = '\0';
+  Lua.verc = 0;
 
   if (fp) {
     while (getline(&line, &linelen, fp) != -1 && linenum++ < 3) {
       vv = sscanf(line, lv_exp,
-          lua_ver.item[0].name,
-          lua_ver.item[1].name,
-          lua_ver.item[2].name,
-          lua_ver.item[3].name,
-          lua_ver.item[4].name,
-          lua_ver.item[5].name);
+                  Lua.verv[0].name, Lua.verv[1].name,
+                  Lua.verv[2].name, Lua.verv[3].name,
+                  Lua.verv[4].name, Lua.verv[5].name);
       if (vv) {
-        lua_ver.len = vv;
+        Lua.verc = vv;
         validate_lua_ver();
         break;
       }
@@ -123,8 +123,8 @@ static void required_lua() {
     free(line);
     fclose(fp);
 
-    if (lua_ver.item[0].name[0] == '\0') {
-      luft_error("no valid '__VERSIONS' found at the beginning of '%s'", luft_file);
+    if (Lua.verv[0].name[0] == '\0') {
+      luft_error("no valid 'lua' entry found at the beginning of '%s'", luft_file);
     }
   }
 }
@@ -172,35 +172,58 @@ static int find_anylua(char *filename, char* ver) {
   }
 }
 
-static int whereis_lua(char *res) {
+static int whereis_lua() {
   required_lua();
-  for (int v=0; v < lua_ver.len; v++) {
+  int v=0; /* keep at this scope! */
+  for ( ; v < Lua.verc; v++) {
     for (int p=0; p < path_list.len; p++) {
       /* Check if is lua5.1 .. lua5.4 */
-      sprintf(res, "%s/%s%s", path_list.item[p], "lua", lua_ver.item[v].name);
-      if (0 == access(res, X_OK)) return 0;
+      sprintf(Lua.bin, "%s/%s%s", path_list.item[p], "lua", Lua.verv[v].name);
+      if (0 == access(Lua.bin, X_OK)) goto found;
 
       /* Check if is lua51 .. lua54 */
-      sprintf(res,"%s/%s%s", path_list.item[p], "lua", lua_ver.item[v].alt);
-      if (0 == access(res, X_OK)) return 0;
+      sprintf(Lua.bin,"%s/%s%s", path_list.item[p], "lua", Lua.verv[v].alt);
+      if (0 == access(Lua.bin, X_OK)) goto found;
 
       /* Check if is lua and matches Lua _VERSION */
-      sprintf(res, "%s/%s", path_list.item[p], "lua");
-      if(0 == find_anylua(res, lua_ver.item[v].name)) return 0;
+      sprintf(Lua.bin, "%s/%s", path_list.item[p], "lua");
+      if(0 == find_anylua(Lua.bin, Lua.verv[v].name)) goto found;
     }
   }
-  luft_error("No Lua version for the '%s' tree was found in your PATH", luft_root);
-  return 1;
+  notfound:
+    luft_error("No Lua version for the '%s' tree was found in your PATH", luft_root);
+    return 1;
+  found:
+    Lua.version = Lua.verv[v].name;
+    return 0;
 }
 
 
-static void call_lua(char *bin, int argc, char **argv) {
-  char *envargf = "LUFT_ARG[%d]";
-  char *argl[argc+4];
-  char envargn[sysconf(_SC_ARG_MAX)];
+/* ENVIRONMENT VARIABLES PASSED TO LUA
+** Lua 5.1 and 5.2 does not initializes the _G.arg table until the Lua file
+** is processed. For the luft module has access to the argument list, it is
+** emulated trough the LUFT_ARG[*] set of variables.
+*/
+static void luft_env(int argc, char **argv) {
+  char *lua_argf = "LUA_ARG[%d]";
+  char lua_argi[sysconf(_SC_ARG_MAX)];
 
+  sprintf(lua_argi,lua_argf,0);
+  setenv(lua_argi,luft_script,0);
+  for( int i=1; i<argc; i++) {
+    sprintf(lua_argi, lua_argf, i);
+    setenv(lua_argi, argv[i], 1);
+  }
+  sprintf(lua_argi, lua_argf, -1);
+  setenv(lua_argi, Lua.bin, 1);
+}
+
+
+
+static void call_lua(int argc, char **argv) {
+  char *argl[argc+4];
   /* arguments passed to Lua */
-  argl[0] = bin;
+  argl[0] = Lua.bin;
   argl[1] = "-l";
   argl[2] = "luft";
   argl[3] = "--";
@@ -208,17 +231,7 @@ static void call_lua(char *bin, int argc, char **argv) {
 
   for( int i=1; i<argc; i++) argl[i+4]=argv[i];
   argl[argc+4]=NULL;
-
-  /* arguments passed via env array */
-  sprintf(envargn, envargf, 0);
-  setenv(envargn, luft_script, 1);
-  for( int i=1; i<argc; i++) {
-    sprintf(envargn, envargf, i);
-    setenv(envargn, argv[i], 1);
-  }
-  sprintf(envargn, envargf, -1);
-  setenv(envargn, bin, 1);
-
+  luft_env(argc, argv);
   execvp(argl[0], argl);
   luft_error("'exec %s': %s", argl[0], strerror(errno));
 }
@@ -265,14 +278,13 @@ static void resolve(char *path) {
 }
 
 
+
 /* Process the shebanged file or directory */
 static int luft_shell(int argc, char **argv) {
-  char   bin[PATH_MAX];         /* the Lua executable */
   resolve(argv[0]);
 
-  if (whereis_lua(bin) == 0) {
-    printf("BIN %s\n", bin);
-    call_lua(bin, argc, argv);
+  if (whereis_lua() == 0) {
+    call_lua(argc, argv);
   }
 
   fprintf(stderr, "Not found a Lua version");
@@ -292,8 +304,17 @@ static int ispath(char *str) {
 int main(int argc, char **argv) {
   if (argc < 1) exit(1);
   if (ispath(argv[1]) ) {
-      get_path_list();
-      luft_shell(argc-1, &argv[1]);
+    setenv("LUFT_SHELL","1",1);
+    get_path_list();
+    luft_shell(argc-1, &argv[1]);
+  } else {
+    /* Lua requires a filename to be processed after or it falls
+       into the repl. So luft_script should be a Lua file or /dev/null */
+    setenv("LUFT_SHELL","\0",1);
+    getcwd(luft_root,PATH_MAX);
+    strcpy(luft_script, "/dev/null");
+    strcpy(Lua.bin,"lua");
+    call_lua(argc, argv);
   }
   return 0;
 }
