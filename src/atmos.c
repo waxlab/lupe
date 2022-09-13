@@ -29,7 +29,7 @@ struct {
   int  len;
 } path_list;
 
-static char atmos_script[PATH_MAX] = "\0"; /* a shbanged Lua file with atmos*/
+static char atmos_script[PATH_MAX] = "\0"; /* Lua file with #! pointing to atmos*/
 static char atmos_file[PATH_MAX]   = "\0"; /* the tre conf */
 static char atmos_root[PATH_MAX]   = "\0"; /* the tree root directory */
 static char ERROR[1024];
@@ -231,12 +231,16 @@ static void call_lua(int argc, char **argv) {
   /* arguments passed to Lua */
   argl[0] = Lua.bin;
   argl[1] = "-l";
-  argl[2] = "atmos";
   argl[3] = "--";
-  argl[4] = atmos_script;
+  if (atmos_script[0] == '\0') {
+    argl[2] = "atmos.cli";
+    argl[4] = "/dev/null";
+  } else {
+    argl[2] = "atmos.sbi";
+    argl[4] = atmos_script;
+  }
 
   for( int i=1; i<argc; i++) argl[i+4]=argv[i];
-  argl[argc+4]=NULL;
   atmos_env(argc, argv);
   execvp(argl[0], argl);
   atmos_error("'exec %s': %s", argl[0], strerror(errno));
@@ -311,15 +315,12 @@ int main(int argc, char **argv) {
   if (argc < 2) return 1;
 
   if (ispath(argv[1]) ) {
-    setenv("ATMOS_SHELL","1",1);
     get_path_list();
     atmos_shell(argc-1, &argv[1]);
   } else {
     /* Lua requires a filename to be processed after or it falls
        into the repl. So atmos_script should be a Lua file or /dev/null */
-    unsetenv("ATMOS_SHELL");
     getcwd(atmos_root,PATH_MAX);
-    strcpy(atmos_script, "/dev/null");
     strcpy(Lua.bin,"lua");
     call_lua(argc, argv);
   }
