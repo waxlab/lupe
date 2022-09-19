@@ -2,10 +2,9 @@
 /lua
 /lua_modules
 /.luarocks
+/wax
 /out
-*.o
+/tree
 **/*.o
-*.so
 **/*.so
-*.a
-**/*.a
+

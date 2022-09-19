@@ -2,6 +2,7 @@ local make, help = {},{}
 local DEBUG = os.getenv('DEBUG')
 local OBJ_EXTENSION = os.getenv('OBJ_EXTENSION')
 local LIB_EXTENSION = os.getenv('LIB_EXTENSION')
+local config = require 'etc.run.config'
 
 -----------------------------------------------------------
 -- HELPERS ------------------------------------------------
@@ -24,26 +25,6 @@ local function isdir(path)
   return false
 end
 
-if _VERSION == "Lua 5.1" then
-  function _load(str)
-    local t = {}
-    local fn, err = loadstring(str, nil)
-    if err then return nil, err end
-    setfenv(fn,t)()
-    return t
-  end
-else
-  local uvj = debug.upvaluejoin
-  function _load(str)
-    local t = {}
-    local fn, err = load(str, nil, 't')
-    if err then return nil, err end
-
-    uvj(fn,1,function() return t end, 1)
-    fn()
-    return t
-  end
-end
 
 local
 function env(var, def)
@@ -56,17 +37,6 @@ function env(var, def)
 end
 
 
-local
-function readconf(file, t)
-  local f = io.open(file, 'r')
-  if not f then
-    if t then return t end
-    error(('file %q not found'):format(file),2)
-  end
-  local res, err = _load( f:read('*a') )
-  f:close()
-  return err and error(file .. ' ' .. err) or res
-end
 
 -----------------------------------------------------------
 -- INSTALL ------------------------------------------------
@@ -74,9 +44,8 @@ end
 do
 
   help.install = 'Install the Lua files and compiled binaries and libraries'
-  function make.install (config)
+  function make.install ()
     local verbose = DEBUG and 'v' or ''
-    config = readconf('config.lua')
     if isdir('lib') then
       x( 'cp -rf%s lib/* %q || :', verbose, env('INST_LUADIR') )
     end
@@ -205,7 +174,6 @@ do
 
   help.build = "Compile C code"
   function make.build ()
-    local config = readconf('config.lua')
     clib(config)
     cbin(config)
   end

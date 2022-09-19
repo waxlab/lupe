@@ -13,7 +13,11 @@ description = {
    detailed   = [[Use directories as standalone Lua apps or packages]],
 }
 
-dependencies = { "lua >= 5.1, < 5.5" }
+dependencies = {
+  "lua >= 5.1, < 5.5",
+  "wax",
+  "noto",
+}
 
 local build_vars
   = 'ROCKVER="'..version..'" '
@@ -37,7 +41,7 @@ local install_vars
 
 build = {
   type = 'command',
-  build_command   = build_vars .. '$(LUA) make.lua build',
-  install_command = install_vars .. '$(LUA) make.lua install',
+  build_command   = build_vars .. '$(LUA) etc/run/make.lua build',
+  install_command = install_vars .. '$(LUA) etc/run/make.lua install',
 }
 
