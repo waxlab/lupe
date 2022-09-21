@@ -16,7 +16,6 @@ description = {
 dependencies = {
   "lua >= 5.1, < 5.5",
   "wax",
-  "noto",
 }
 
 local build_vars

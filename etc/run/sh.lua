@@ -8,7 +8,7 @@ unpack = unpack or table.unpack
 
 local DEBUG = os.getenv('DEBUG')
 
---@ sh.rexec( string command, table values) : table result, number exitstatus
+--$ sh.rexec(command: string, ...: string) : table, number
 --| Execute command and returns its contents on a table and its numeric exit
 function sh.rexec(cmd, ...)
   local cs = {...}
@@ -41,7 +41,7 @@ function sh.rexec(cmd, ...)
 
 end
 
---@ sh.exec(string command, table values)
+--$ sh.exec(command: string, ...: string)
 --| Execute command and if it has errors abort Lua script
 function sh.exec(cmd, ...)
   local cs = {...}
@@ -74,7 +74,16 @@ function sh.exec(cmd, ...)
   end
 end
 
-
+--$ sh.whereis(pattern: string, ... : string)
+--| Find the command in system using the single field `pattern` filled with
+--| subsequent string parameters.
+--|
+--| Ex:
+--|
+--| ```lua
+--| sh.whereis('lua%s','51','5.1') -- matches `lua51` and `lua5.1`
+--| sh.whereis('%ssed','','g') -- matches `sed` and `gsed`
+--| ```
 function sh.whereis(cmd, ...)
   local targets = {}
   local cs = {...}

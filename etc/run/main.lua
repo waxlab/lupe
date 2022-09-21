@@ -107,7 +107,7 @@ end
 function command.help()
   cmd = ([[
     cat $(find %s -name '*.lua') \
-    | grep '\--@'|cut -d' ' -f2- 2> /dev/null | fzf
+    | grep '\--\$'|cut -d' ' -f2- 2> /dev/null | fzf
   ]]):format(docdir)
   os.execute(cmd)
 end
@@ -116,8 +116,8 @@ end
 function command.docmd()
   cmd = ([[
     for i in $(find %s -name '*.lua'); do
-      grep -A1 '^\(--@\|--{ #\|--| #\)' $i ;
-    done | sed 's/^--@\s*\(\([^(]\+\).*\)\s*$/\n###### \2\n\n`\1`\n/g;s/^--[}{|]\?\s*//g'
+      grep -A1 '^\(--\$\|--| #\)' $i | grep -- '^--'
+    done | sed 's/^--\$\s*\(\([^(]\+\).*\)\s*$/###### \1/g;s/^--[}{|]\?\s*//g;s/^#/\n#/g'
   ]]):format(docdir)
   os.execute(cmd)
 end
@@ -218,7 +218,7 @@ else
   local f = io.open(arg[0])
   repeat
     line = f:read()
-    if line and line:find('^%-%-[|{}]%s?') == 1 then
+    if line and line:find('^%-%-|%s?') == 1 then
         print(line:sub(5))
     end
   until not line

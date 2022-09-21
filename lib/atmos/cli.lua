@@ -1,9 +1,16 @@
---| When you call atmos passing a non path parameter (i.e. doesn't contains "/")
---| it understands you are passing to atmos a command.
 --|
---| The available atmos commands are:
---|  init    Create the structure in current directory
---|  update  Check for dependency updates
+--| usage:  atmos [<path> | <command>] [<args>]
+--| 
+--| To be considered a <path>, the argument must have a slash as in:
+--|     "./"          current directory
+--|     "rel/path"    relative path
+--|     "/abs/path"   absolute path
+--|
+--| Commands are one of the following:
+--|     init          create the structure in current directory
+--|     update        check for dependency updates
+--|     help          this message
+--|
 
 local atmos   = require 'atmos'
 local waxpath = require 'wax.path'
@@ -130,6 +137,5 @@ if command[arg[1]] then
   command[arg[1]]({ unpack(arg,2) })
   os.exit(0)
 end
-print('opa')
-local noto = require 'noto'
-print(noto.self())
+local note = require 'wax.note'
+print(note.self())
