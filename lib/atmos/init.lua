@@ -1,23 +1,28 @@
-local atmos = {}
-local config = {}
 local wax = require 'wax'
+local atmos = {
+  root     = os.getenv 'ATMOS_ROOT',
+  specfile = os.getenv 'ATMOS_SPEC',
+  lua      = _VERSION:gsub('.* ([%d.]*)$','%1')
+}
 
---@ atmos.config(key : string) : atmos.config
+
+--$ atmos.spec : table
 --| Standard keys:
 --| * lua_version : The current used Lua version.
 --| * root : Full path of the project root directory
---| * file : Full path of the project config file
+--| * spec : Full path of the project atmospec file
 --| * ext : List of dependencies
 --| * rocks : Luarocks rocks (same format as in rockspec `dependencies` key)
-function atmos.config(key)
-  if not config.file then
-    local cfgfile = os.getenv 'ATMOS_CONFIG'
-    assert(wax.loadfile(cfgfile, config))()
-    config.lua_version = _VERSION:gsub('.* ([%d.]*)$','%1')
-    config.root = os.getenv 'ATMOS_ROOT'
-    config.file = cfgfile
-  end
-  return config[key]
+
+--$ atmos.readspec()
+--| Setup atmos using the atmospec file on already initialized dirs
+--| Resulting data is stored under `atmos.spec` table.
+--| If atmospec.lua is not found an error is thrown.
+function atmos.readspec()
+  if atmos.spec then return atmos.spec end
+  atmos.spec = {}
+  assert(wax.loadfile(atmos.specfile, atmos.spec))()
+  return atmos.spec
 end
 
 

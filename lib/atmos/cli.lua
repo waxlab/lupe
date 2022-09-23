@@ -22,6 +22,11 @@ local target = ('%s/%%s'):format(waxpath.getcwd())
 --
 -- HELPER FUNCTIONS
 --
+local confsubst do
+  local function c(k) return atmos[k] end
+  function confsubst(s) return (s:gsub('$%(([%d%l_]+)%)', c)) end
+end
+
 local function clierror(msg, val)
   stderr:write('[ERROR]  ', msg:format(val), "\n\r")
   os.exit(1)
@@ -29,10 +34,6 @@ end
 
 local function cliwarn(msg, val)
   stderr:write('[WARN] ', msg:format(val), "\n\r")
-end
-
-local function cfgsub(content)
-  return (content:gsub('$%(([%d%l_]+)%)', atmos.config))
 end
 
 local function mkdir(p)
@@ -47,7 +48,7 @@ local function mkfile(name, content, overwrite, mode)
   local f = io.open(name, 'w+')
   if f
     then
-      f:write(cfgsub(content))
+      f:write(confsubst(content))
       f:close()
       if mode then waxpath.chmod(name, mode) end
     else
@@ -65,17 +66,16 @@ local command = {}
 function command.init()
   mkdir 'etc'
   mkdir 'bin'
-  mkdir 'ext'
-  mkfile('atmospec.lua', cat({
+    mkdir 'deps'
+    mkfile('atmospec.lua', cat({
     '-- List the Lua compatible versions. Leftmost has priority.',
     '-- Ex: `lua = { "5.3", "5.2" }` will try 5.3 and then 5.2',
-    'lua = { "$(lua_version)" }','',
+    'lua = { "$(lua)" }','',
     '-- External dependencies',
-    'ext = {',
+    'deps = {',
     '  -- example:',
     '  -- packagename = "protocol://GIT_URL"',
-    '  -- packagename = { "protocol://GIT_URL", reg="dev", dir="lib" }',
-    '  -- packagename = { "protocol://GIT_URL", reg="dev", selfdir="lib" }',
+    '  -- packagename = { "protocol://GIT_URL", ref="dev", dir="lib" }',
     '  -- packagename = "relative/path"',
     '  -- packagename = "/abs/path"',
     '}','',
@@ -96,20 +96,20 @@ function command.init()
   -- Do not create if directory was not initialized
   if not waxpath.isdir 'lib' then
     mkdir 'lib'
-    mkfile('lib/example.lua', cat {
+    mkfile('lib/example.lua', cat ({
       'local module = {}',
       'function module.run() print("hello world") end',
-      'return module', '\n' })
+      'return module'}, '\n'))
 
   end
 end
 
-function command.update()
-  local wt = require 'wax.table'
 
-  local rocks = assert(atmos.config('rocks'), '`rocks` config entry missing')
+function command.update()
+  atmos.readspec()
+  local wt = require 'wax.table'
+  local rocks = assert(atmos.spec.rocks, '`rocks` config entry missing')
   local rsname = 'ext-dep-0.rockspec'
-  mkdir 'ext/.luarocks'
   local rockspectpl = cat({
     'package = "ext"',
     'version = "dep-0"',
@@ -118,19 +118,18 @@ function command.update()
     'dependencies = %s',
   },"\n")
 
-
-  mkfile('ext/.luarocks/'..rsname,
+  mkdir 'deps/.rocks'
+  mkfile('deps/.rocks/'..rsname,
              rockspectpl:format(wt.tostring(rocks)),
              true)
-
-  local luarocks_update = cat({
+  local rocks_update = cat({
     'luarocks ',
-      '--lua-version $(lua_version) ',
-      '--tree $(root)/ext/.luarocks ',
-      'make $(root)/ext/.luarocks/',rsname
+      '--lua-version $(lua) ',
+      '--tree $(root)/deps/.rocks ',
+      'make $(root)/deps/.rocks/',rsname
   })
 
-  os.execute(cfgsub(luarocks_update))
+  os.execute(confsubst(rocks_update))
 end
 
 if command[arg[1]] then

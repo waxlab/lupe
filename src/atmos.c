@@ -12,25 +12,26 @@
 #define DEBUG printf
 
 
-struct {
+static struct {
   char bin[PATH_MAX]; /* Lua binary path */
-  char *version;      /* Lua binary version found */
+  char version[10];
 
   /* List containing the required Lua versions */
-  int verc; struct {
-    char name[4]; /* Ex: 5.4 */
-    char alt[10]; /* Ex: 54 (BSD and other Unixes) */
+  int verc;
+  struct {
+    char version[10]; /* Ex: 5.4 */
+    char altvers[10]; /* Ex: 54 (BSD and other Unixes) */
   } verv[6];
 } Lua;
 
 
-struct {
+static struct {
   char item[100][PATH_MAX];
   int  len;
 } path_list;
 
 static char atmos_script[PATH_MAX] = "\0"; /* Lua file with #! pointing to atmos*/
-static char atmos_config[PATH_MAX] = "\0"; /* the tre conf */
+static char atmos_spec[PATH_MAX]   = "\0"; /* the directory meta specifications */
 static char atmos_root[PATH_MAX]   = "\0"; /* the tree root directory */
 static char ERROR[1024];
 
@@ -49,7 +50,7 @@ static void atmos_error(char *fmt, ...) {
 
 
 /* Convert the environment PATH in a list of directories */
-static int get_path_list() {
+static int get_path_list(void) {
   int ret=0;
   int len=0;
   char *envpath = getenv("PATH");
@@ -77,43 +78,43 @@ static int get_path_list() {
 
 
 /* Checks if version is valid example "5.1", ... "5.4" and populate @lvn */
-static void validate_lua_ver() {
-  char alt[100] = "\0"; /* if ver="5.4" this will be "54" */
+static void validate_lua_ver(void) {
+  char altvers[100] = "\0"; /* if ver="5.4" this will be "54" */
   int  ai       = 0;
-  char *name;
+  char *version;
 
   for(int v=0; v < Lua.verc; v++) {
-    name=Lua.verv[v].name;
-    for(int c=0; c<strlen(name); c++) {
-      if (name[c] >= '0' && name[c] <= '9') {
-        alt[ai++] = name[c];
+    version=Lua.verv[v].version;
+    for(int c=0; c<strlen(version); c++) {
+      if (version[c] >= '0' && version[c] <= '9') {
+        altvers[ai++] = version[c];
         continue;
       }
-      if (name[c] != '.') atmos_error("Invalid version %s", name);
+      if (version[c] != '.') atmos_error("Invalid version %s", version);
     }
-    alt[ai]='\0';
-    strcpy(Lua.verv[v].alt, alt);
+    altvers[ai]='\0';
+    strcpy(Lua.verv[v].altvers, altvers);
   }
 }
 
 
 
 /* Read file line by line until find the Lua required version */
-static void required_lua() {
-  FILE  *fp = fopen(atmos_config, "r");
+static void required_lua(void) {
+  FILE  *fp = fopen(atmos_spec, "r");
   char  *line  = NULL;
   size_t linelen = 0;
   int    linenum = 0;
   int    vv = 0;
-  Lua.verv[0].name[0] = '\0';
+  Lua.verv[0].version[0] = '\0';
   Lua.verc = 0;
 
   if (fp) {
     while (getline(&line, &linelen, fp) != -1 && linenum++ < 3) {
       vv = sscanf(line, lv_exp,
-                  Lua.verv[0].name, Lua.verv[1].name,
-                  Lua.verv[2].name, Lua.verv[3].name,
-                  Lua.verv[4].name, Lua.verv[5].name);
+                  Lua.verv[0].version, Lua.verv[1].version,
+                  Lua.verv[2].version, Lua.verv[3].version,
+                  Lua.verv[4].version, Lua.verv[5].version);
       if (vv) {
         Lua.verc = vv;
         validate_lua_ver();
@@ -123,8 +124,8 @@ static void required_lua() {
     free(line);
     fclose(fp);
 
-    if (Lua.verv[0].name[0] == '\0') {
-      atmos_error("no valid 'lua' entry found at the beginning of '%s'", atmos_config);
+    if (Lua.verv[0].version[0] == '\0') {
+      atmos_error("no valid 'lua' entry found at the beginning of '%s'", atmos_spec);
     }
   }
 }
@@ -172,30 +173,36 @@ static int find_anylua(char *filename, char* ver) {
   }
 }
 
-static int whereis_lua() {
+static int whereis_lua(void) {
   required_lua();
   int v=0; /* keep at this scope! */
   for ( ; v < Lua.verc; v++) {
     for (int p=0; p < path_list.len; p++) {
       /* Check if is lua5.1 .. lua5.4 */
-      sprintf(Lua.bin, "%s/%s%s", path_list.item[p], "lua", Lua.verv[v].name);
+      sprintf(Lua.bin, "%s/%s%s", path_list.item[p], "lua", Lua.verv[v].version);
       if (0 == access(Lua.bin, X_OK)) goto found;
 
       /* Check if is lua51 .. lua54 */
-      sprintf(Lua.bin,"%s/%s%s", path_list.item[p], "lua", Lua.verv[v].alt);
+      sprintf(Lua.bin,"%s/%s%s", path_list.item[p], "lua", Lua.verv[v].altvers);
       if (0 == access(Lua.bin, X_OK)) goto found;
 
       /* Check if is lua and matches Lua _VERSION */
       sprintf(Lua.bin, "%s/%s", path_list.item[p], "lua");
-      if(0 == find_anylua(Lua.bin, Lua.verv[v].name)) goto found;
+      if(0 == find_anylua(Lua.bin, Lua.verv[v].version)) goto found;
     }
   }
-  notfound:
-    atmos_error("No Lua version for the '%s' tree was found in your PATH", atmos_root);
-    return 1;
+  atmos_error("No Lua version for the '%s' tree was found in your PATH", atmos_root);
+  return 1;
   found:
-    Lua.version = Lua.verv[v].name;
+    strcpy(Lua.version, Lua.verv[v].version);
     return 0;
+}
+
+/* If string terminates with \n remove it and returns */
+static char *trimnl(char *s) {
+  int l = strlen(s);
+  if (s[l-1] == '\n') s[l-1]='\0';
+  return s;
 }
 
 
@@ -209,7 +216,7 @@ static void atmos_env(int argc, char **argv) {
   char *lua_argi = malloc(sizeof(char) * sysconf(_SC_ARG_MAX));
 
   setenv("ATMOS_ROOT", atmos_root, 1);
-  setenv("ATMOS_CONFIG", atmos_config, 1);
+  setenv("ATMOS_SPEC", atmos_spec, 1);
 
   sprintf(lua_argi, lua_argf, 0);
   setenv(lua_argi, atmos_script, 1);
@@ -230,7 +237,7 @@ static void atmos_env(int argc, char **argv) {
 
 
 static void call_lua(int argc, char **argv) {
-  char *argl[argc+4];
+  char *argl[1024];
   /* arguments passed to Lua */
   argl[0] = Lua.bin;
   argl[1] = "-l";
@@ -239,7 +246,7 @@ static void call_lua(int argc, char **argv) {
     argl[2] = "atmos.cli";
     argl[4] = "/dev/null";
   } else {
-    argl[2] = "atmos.sbi.main";
+    argl[2] = "atmos.dir";
     argl[4] = atmos_script;
   }
 
@@ -284,9 +291,9 @@ static void resolve(char *path) {
     atmos_error("The script '%s' doesn't belongs to a Atmos tree", atmos_script);
   }
 
-  sprintf(atmos_config, "%s/%s", atmos_root, "atmospec.lua");
-  if ( stat(atmos_config, &st) != 0 ) {
-    atmos_error("Error detecting '%s' : %s", atmos_config, strerror(errno));
+  sprintf(atmos_spec, "%s/%s", atmos_root, "atmospec.lua");
+  if ( stat(atmos_spec, &st) != 0 ) {
+    atmos_error("Error detecting '%s' : %s", atmos_spec, strerror(errno));
   }
   if( S_ISREG(st.st_mode) ) return;
   atmos_error("The atmos file wasn't found at '%s'", atmos_root);
@@ -317,19 +324,30 @@ static int ispath(char *str) {
 
 
 int main(int argc, char **argv) {
-  if (argc < 2) return 1;
+  /*
+  ** Lua requires a filename to be processed after or it falls
+  ** into the repl. So atmos_script should be a Lua file or /dev/null
+  */
 
-  if (ispath(argv[1]) ) {
+  strcpy(Lua.bin,    "\0");
+  strcpy(Lua.version,"\0");
+  Lua.verc = 0;
+
+  if ( argc > 1 && ispath(argv[1]) ) {
     get_path_list();
     atmos_shell(argc-1, &argv[1]);
-  } else {
-    /* Lua requires a filename to be processed after or it falls
-       into the repl. So atmos_script should be a Lua file or /dev/null */
-    getcwd(atmos_root, PATH_MAX);
-    sprintf(atmos_config, "%s/%s", atmos_root, "atmospec.lua");
-    strcpy(Lua.bin, "lua");
-    call_lua(argc, argv);
+    return 0;
   }
+
+  char *argvdef[2] = { argv[0], "help" };
+  if (argc < 2) {
+    argc = 2;
+    argv = argvdef;
+  }
+  getcwd(atmos_root, PATH_MAX);
+  sprintf(atmos_spec, "%s/%s", atmos_root, "atmospec.lua");
+  strcpy(Lua.bin, "lua");
+  call_lua(argc, argv);
   return 0;
 }
 
