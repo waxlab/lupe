@@ -24,9 +24,9 @@ local dirpath = {
   ('%s/lib/%%s.lua'):format(lupe.root),
   ('%s/lib/%%s/init.lua'):format(lupe.root),
 }
-local depspath = {
-  ('%s/deps/%%s/%%s/%%s.lua'):format(lupe.root),
-  ('%s/deps/%%s/%%s/%%s/init.lua'):format(lupe.root),
+local deppath = {
+  ('%s/deps/%%s/%%s.lua'):format(lupe.root),
+  ('%s/deps/%%s/%%s/init.lua'):format(lupe.root),
 }
 
 package.path = table.concat({
@@ -65,25 +65,20 @@ function lupe_searcher(module)
 
   local dotpos = module:find('.',0,true) or 0
   local pack = module:sub(0, dotpos - 1)
-  local deps = lupe.rc.deps[pack]
+  local dep = lupe.rc.deps[pack]
+  if dep then
+    local cutoff = false
+    if type(dep) == 'table' then dep, cutoff = dep[1], (dep.cutoff or false) end
+    if cutoff then
+      modpath = module:sub(dotpos+1)
+    end
 
-  if deps then
-    local subdir = type(deps) == 'table' and deps.subdir or 'lib'
-    for _, m in ipairs(depspath) do
-      file = m:format(pack, subdir, modpath)
+    for _, m in ipairs(deppath) do
+      file = m:format(dep, modpath)
       if path.isfile(file) then return function() return dofile(file) end end
       try[#try+1] = err_str:format(file)
     end
 
-    -- shortened path where pack name part is not under subdir
-    modpath = (dotpos > 0 and module:sub(dotpos+1) or ''):gsub('%.','/')
-    if modpath ~= '' then
-      for _, m in ipairs(depspath) do
-        file = m:format(pack, subdir, modpath)
-        if path.isfile(file) then return function() return dofile(file) end end
-        try[#try+1] = err_str:format(file)
-      end
-    end
   end
   return table.concat(try)
 end
