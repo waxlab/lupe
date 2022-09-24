@@ -1,5 +1,5 @@
 --|
---| usage:  atmos [<path> | <command>] [<args>]
+--| usage:  lupe [<path> | <command>] [<args>]
 --| 
 --| To be considered a <path>, the argument must have a slash as in:
 --|     "./"          current directory
@@ -12,7 +12,7 @@
 --|     help          this message
 --|
 
-local atmos   = require 'atmos'
+local lupe   = require 'lupe'
 local waxpath = require 'wax.path'
 local cat     = table.concat
 local unpack  = table.unpack or unpack
@@ -23,7 +23,7 @@ local target = ('%s/%%s'):format(waxpath.getcwd())
 -- HELPER FUNCTIONS
 --
 local confsubst do
-  local function c(k) return atmos[k] end
+  local function c(k) return lupe[k] end
   function confsubst(s) return (s:gsub('$%(([%d%l_]+)%)', c)) end
 end
 
@@ -67,7 +67,7 @@ function command.init()
   mkdir 'etc'
   mkdir 'bin'
     mkdir 'deps'
-    mkfile('atmospec.lua', cat({
+    mkfile('luperc.lua', cat({
     '-- List the Lua compatible versions. Leftmost has priority.',
     '-- Ex: `lua = { "5.3", "5.2" }` will try 5.3 and then 5.2',
     'lua = { "$(lua)" }','',
@@ -89,7 +89,7 @@ function command.init()
   },'\n'))
 
   mkfile('bin/main.lua', cat({
-  '#!/usr/bin/env atmos',
+  '#!/usr/bin/env lupe',
   'local ex = require "example"',
   'ex.run()'},'\n'), false, '755')
 
@@ -106,9 +106,9 @@ end
 
 
 function command.update()
-  atmos.readspec()
+  lupe.readconf()
   local wt = require 'wax.table'
-  local rocks = assert(atmos.spec.rocks, '`rocks` config entry missing')
+  local rocks = assert(lupe.rc.rocks, '`rocks` config entry missing')
   local rsname = 'ext-dep-0.rockspec'
   local rockspectpl = cat({
     'package = "ext"',

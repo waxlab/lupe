@@ -1,9 +1,9 @@
-rockspec = 'atmos-latest-1.rockspec'
+rockspec = 'lupe-latest-1.rockspec'
 
 bin = { }
 clib = { }
 cbin = {
-  { "atmos", "atmos.c" }
+  { "lupe", "lupe.c" }
 }
 
 

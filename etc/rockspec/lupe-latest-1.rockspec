@@ -1,12 +1,12 @@
-package = "atmos"
+package = "lupe"
 version = "latest-1"
 
 source = {
-   url = "git+ssh://git@github.com/luawax/atmos.git"
+   url = "git+ssh://git@github.com/luawax/lupe.git"
 }
 
 description = {
-   homepage   = "https://github.com/luawax/atmos",
+   homepage   = "https://github.com/luawax/lupe",
    license    = "MIT",
    summary    = "Environment for Lua",
    maintainer = "Thadeu de Paula",

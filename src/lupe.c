@@ -30,9 +30,9 @@ static struct {
   int  len;
 } path_list;
 
-static char atmos_script[PATH_MAX] = "\0"; /* Lua file with #! pointing to atmos*/
-static char atmos_spec[PATH_MAX]   = "\0"; /* the directory meta specifications */
-static char atmos_root[PATH_MAX]   = "\0"; /* the tree root directory */
+static char lupe_script[PATH_MAX] = "\0"; /* Lua file with #! pointing to lupe*/
+static char lupe_rc[PATH_MAX]   = "\0"; /* the directory meta specifications */
+static char lupe_root[PATH_MAX]   = "\0"; /* the tree root directory */
 static char ERROR[1024];
 
 /* matches the line version */
@@ -40,7 +40,7 @@ static char const *lv_exp =
   "lua = %*[\"{ ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]%*[,\" ]%[0-9.]";
 
 
-static void atmos_error(char *fmt, ...) {
+static void lupe_error(char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   vfprintf(stderr, fmt, args); fprintf(stderr,"\n");
@@ -90,7 +90,7 @@ static void validate_lua_ver(void) {
         altvers[ai++] = version[c];
         continue;
       }
-      if (version[c] != '.') atmos_error("Invalid version %s", version);
+      if (version[c] != '.') lupe_error("Invalid version %s", version);
     }
     altvers[ai]='\0';
     strcpy(Lua.verv[v].altvers, altvers);
@@ -101,7 +101,7 @@ static void validate_lua_ver(void) {
 
 /* Read file line by line until find the Lua required version */
 static void required_lua(void) {
-  FILE  *fp = fopen(atmos_spec, "r");
+  FILE  *fp = fopen(lupe_rc, "r");
   char  *line  = NULL;
   size_t linelen = 0;
   int    linenum = 0;
@@ -125,7 +125,7 @@ static void required_lua(void) {
     fclose(fp);
 
     if (Lua.verv[0].version[0] == '\0') {
-      atmos_error("no valid 'lua' entry found at the beginning of '%s'", atmos_spec);
+      lupe_error("no valid 'lua' entry found at the beginning of '%s'", lupe_rc);
     }
   }
 }
@@ -191,7 +191,7 @@ static int whereis_lua(void) {
       if(0 == find_anylua(Lua.bin, Lua.verv[v].version)) goto found;
     }
   }
-  atmos_error("No Lua version for the '%s' tree was found in your PATH", atmos_root);
+  lupe_error("No Lua version for the '%s' tree was found in your PATH", lupe_root);
   return 1;
   found:
     strcpy(Lua.version, Lua.verv[v].version);
@@ -208,18 +208,18 @@ static char *trimnl(char *s) {
 
 /* ENVIRONMENT VARIABLES PASSED TO LUA
 ** Lua 5.1 and 5.2 does not initializes the _G.arg table until the Lua file
-** is processed. For the atmos module has access to the argument list, it is
-** emulated trough the ATMOS_ARG[*] set of variables.
+** is processed. For the lupe module has access to the argument list, it is
+** emulated trough the LUPE_ARG[*] set of variables.
 */
-static void atmos_env(int argc, char **argv) {
+static void lupe_env(int argc, char **argv) {
   char *lua_argf = "LUA_ARG[%d]";
   char *lua_argi = malloc(sizeof(char) * sysconf(_SC_ARG_MAX));
 
-  setenv("ATMOS_ROOT", atmos_root, 1);
-  setenv("ATMOS_SPEC", atmos_spec, 1);
+  setenv("LUPE_ROOT", lupe_root, 1);
+  setenv("LUPE_RC", lupe_rc, 1);
 
   sprintf(lua_argi, lua_argf, 0);
-  setenv(lua_argi, atmos_script, 1);
+  setenv(lua_argi, lupe_script, 1);
   for(int i=0; i < argc; i++) {
     sprintf(lua_argi, lua_argf, i);
     setenv(lua_argi, argv[i], 1);
@@ -242,18 +242,18 @@ static void call_lua(int argc, char **argv) {
   argl[0] = Lua.bin;
   argl[1] = "-l";
   argl[3] = "--";
-  if (atmos_script[0] == '\0') {
-    argl[2] = "atmos.cli";
+  if (lupe_script[0] == '\0') {
+    argl[2] = "lupe.cli";
     argl[4] = "/dev/null";
   } else {
-    argl[2] = "atmos.dir";
-    argl[4] = atmos_script;
+    argl[2] = "lupe.dir";
+    argl[4] = lupe_script;
   }
 
   for( int i=1; i<argc; i++) argl[i+4]=argv[i];
-  atmos_env(argc, argv);
+  lupe_env(argc, argv);
   execvp(argl[0], argl);
-  atmos_error("'exec %s': %s", argl[0], strerror(errno));
+  lupe_error("'exec %s': %s", argl[0], strerror(errno));
 }
 
 
@@ -263,46 +263,46 @@ static void resolve(char *path) {
   char ps[PATH_MAX];
   char *dir;
 
-  if (realpath(path, atmos_script) == NULL)
-    atmos_error("Error accessing '%s' : %s", path, strerror(errno));
+  if (realpath(path, lupe_script) == NULL)
+    lupe_error("Error accessing '%s' : %s", path, strerror(errno));
 
-  stat(atmos_script, &st);
+  stat(lupe_script, &st);
 
   if (S_ISDIR(st.st_mode)) {
-    strcat(atmos_script,"/bin/main.lua");
-    if ( stat(atmos_script, &st) != 0 ) atmos_error("Error accessing script '%s' : %s", atmos_script, strerror(errno));
+    strcat(lupe_script,"/bin/main.lua");
+    if ( stat(lupe_script, &st) != 0 ) lupe_error("Error accessing script '%s' : %s", lupe_script, strerror(errno));
   }
 
-  if (! (S_ISREG(st.st_mode))) atmos_error("Error: '%s' must be a regular file", atmos_script);
+  if (! (S_ISREG(st.st_mode))) lupe_error("Error: '%s' must be a regular file", lupe_script);
 
-  strcpy(ps, atmos_script);
+  strcpy(ps, lupe_script);
   dir = dirname(ps);
 
   for (int i = strlen(dir); i>0; i--) {
     if (dir[i] == '/') {
       if (strcmp(&dir[i], "/bin") == 0) {
         dir[i]='\0';
-        strcpy(atmos_root, dir);
+        strcpy(lupe_root, dir);
         break;
       }
     }
   }
-  if ( atmos_root[0] == '\0' ) {
-    atmos_error("The script '%s' doesn't belongs to a Atmos tree", atmos_script);
+  if ( lupe_root[0] == '\0' ) {
+    lupe_error("The script '%s' doesn't belongs to a Lupe tree", lupe_script);
   }
 
-  sprintf(atmos_spec, "%s/%s", atmos_root, "atmospec.lua");
-  if ( stat(atmos_spec, &st) != 0 ) {
-    atmos_error("Error detecting '%s' : %s", atmos_spec, strerror(errno));
+  sprintf(lupe_rc, "%s/%s", lupe_root, "luperc.lua");
+  if ( stat(lupe_rc, &st) != 0 ) {
+    lupe_error("Error detecting '%s' : %s", lupe_rc, strerror(errno));
   }
   if( S_ISREG(st.st_mode) ) return;
-  atmos_error("The atmos file wasn't found at '%s'", atmos_root);
+  lupe_error("The lupe file wasn't found at '%s'", lupe_root);
 }
 
 
 
 /* Process the shebanged file or directory */
-static int atmos_shell(int argc, char **argv) {
+static int lupe_shell(int argc, char **argv) {
   resolve(argv[0]);
 
   if (whereis_lua() == 0) {
@@ -326,7 +326,7 @@ static int ispath(char *str) {
 int main(int argc, char **argv) {
   /*
   ** Lua requires a filename to be processed after or it falls
-  ** into the repl. So atmos_script should be a Lua file or /dev/null
+  ** into the repl. So lupe_script should be a Lua file or /dev/null
   */
 
   strcpy(Lua.bin,    "\0");
@@ -335,7 +335,7 @@ int main(int argc, char **argv) {
 
   if ( argc > 1 && ispath(argv[1]) ) {
     get_path_list();
-    atmos_shell(argc-1, &argv[1]);
+    lupe_shell(argc-1, &argv[1]);
     return 0;
   }
 
@@ -344,8 +344,8 @@ int main(int argc, char **argv) {
     argc = 2;
     argv = argvdef;
   }
-  getcwd(atmos_root, PATH_MAX);
-  sprintf(atmos_spec, "%s/%s", atmos_root, "atmospec.lua");
+  getcwd(lupe_root, PATH_MAX);
+  sprintf(lupe_rc, "%s/%s", lupe_root, "luperc.lua");
   strcpy(Lua.bin, "lua");
   call_lua(argc, argv);
   return 0;

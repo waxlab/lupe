@@ -1,6 +1,6 @@
-![Atmos](https://repository-images.githubusercontent.com/531184514/f0ec9a0e-bd24-4625-92e6-e4d25e6b0447)
+![Lupe](https://repository-images.githubusercontent.com/531184514/f0ec9a0e-bd24-4625-92e6-e4d25e6b0447)
 
-Atmos - Lua apps and packages as directory trees
+Lupe - Lua apps and packages as directory trees
 ===============================================
 
 Quickstart
@@ -8,12 +8,12 @@ Quickstart
 
 1. Create a folder/directory
 2. enter in it
-3. run `atmos init`
+3. run `lupe init`
 4. explore the structure created inside the folder and
    edit the files as you want to.
 
 
-The standard Atmos file system
+The standard Lupe file system
 ------------------------------
 ```
 yourpkg
@@ -35,7 +35,7 @@ yourpkg
  │       ├─ etc/
  │       ╰─ lib/
  │
- ╰ atmos
+ ╰ lupe
 ```
 
 * `etc` folder is the place where you can add yout project assets. For a console
@@ -43,23 +43,23 @@ program you can have files containing colorschemes, or data skeleton, or any
 other configuration you want to. Like in the Unix etc directory. If the project
 is related to a website, here you can put your templates, css, js etc.
 * `lib` folder contains the modules of your package. The modules contained in this
-folder have precedence over the instaled out of atmos folder. The way you see the
+folder have precedence over the instaled out of lupe folder. The way you see the
 structure in this folder is the way you can require them (the simple Lua way)
 * `dep` stands for dependencies. Here is where your dependencies are installed.
 
-The Atmos root file
+The Lupe root file
 -------------------
 
-This file marks the root of the Atmos system structure, and contains important
+This file marks the root of the Lupe system structure, and contains important
 information about the system:
 
 * `lua_version = LIST` inform for which Lua versions it is intended to work.
-When running the Atmos it will follow this list in order finding the correct
+When running the Lupe it will follow this list in order finding the correct
 Lua version for your application. Ex: `lua_version={"5.4","5.3"}`
 
 * `dep = INDEX` is a table where the keys are the name of the package and the
 value is a string or a table. If it is only a string, on update it will download
-and update the git resository at the url. If it is a table Atmos will consider
+and update the git resository at the url. If it is a table Lupe will consider
 the information provided there to choose the right Git reference (branch or tag)
 as well as if it shouldnt do a shallow clone. Ex:
 
@@ -70,11 +70,11 @@ dep = {
 }
 ```
 
-Executable Atmos folder
+Executable Lupe folder
 -----------------------
 
-As you see, when you execute `atmos init` a `./bin/main.lua` file is created.
-If anywhere from your system you run `atmos /your/proj/dir` it will look
+As you see, when you execute `lupe init` a `./bin/main.lua` file is created.
+If anywhere from your system you run `lupe /your/proj/dir` it will look
 for the `/your/proj/dir/bin/main.lua` and execute it.
 
 You may also link the `/your/proj/dir/bin/main.lua` to your system `$PATH`, eg:
@@ -82,15 +82,15 @@ You may also link the `/your/proj/dir/bin/main.lua` to your system `$PATH`, eg:
 `ln -sf /your/proj/dir/bin/main.lua /usr/local/bin/yourproj`
 
 Now, when you run `yourproj` from anywhere on your system it will correctly
-execute the `main.lua` file resolving all the inner dependencies of your Atmos
+execute the `main.lua` file resolving all the inner dependencies of your Lupe
 folder.
 
-Creating more than one Lua executable script inside Atmos
+Creating more than one Lua executable script inside Lupe
 ---------------------------------------------------------
 
 You can add multiple Lua executable scripts inside the `./bin` folder under
-your atmos project. They just need to be executable (with `chmod +x`) and
-has the hasbang on the first line like `#!/usr/bin/env atmos`.
+your lupe project. They just need to be executable (with `chmod +x`) and
+has the hasbang on the first line like `#!/usr/bin/env lupe`.
 
 
 Why don't use only Luarocks?
@@ -103,7 +103,7 @@ But things become complex when you want to include private dependencies or
 develop multiple packages at the same time... Well, I won't describe all
 the process here, but feel free to try and discover the complexity.
 
-Here comes the idea of Atmos:
+Here comes the idea of Lupe:
 
 - Provide a simple way to quickstart a project with Lua only files.
 - Resolve the path in a way that you can just drop your project folder
@@ -122,7 +122,7 @@ Next steps
 ----------
 
 1. Allow more isolated usage with a option to block external paths
-from `package.path` and wrap Luarocks call to install under the Atmos
+from `package.path` and wrap Luarocks call to install under the Lupe
 folder.
 2. Dependency resolution for packages installed from a Git repository.
 
