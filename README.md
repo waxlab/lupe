@@ -29,33 +29,57 @@ See below a fictitious folder structure for a project created with Lupe:
 ```
 
 SolarSystem
- │
- ├─ bin  <··· The place with your Lua scripts
- │   ├─ main.lua
- │   ╰─ sun.lua
- │
- ├─ etc/  <··· Where the confs of your package are
- │   ├─ template.tpl
- │   ╰─ anything.jpg
- │
- ├─ lib/  <··· Strictly Lua modules
- │   ├─ asteroid.lua ··· got as require("asteroid")
- │   ├─ planet.lua ··· got as require("planet")
- │   │   ╰─ satellite.lua ... git as require("planet.satellite")
- │   ╰─ comet.lua ... git as require("comet")
- │
- ├─ deps/  <··· Your dependencies go here
- │   ├─ .rocks/ <··········· directory used to install rocks via Luarocks
- │   ├─ starchem/
- │   │   ╰─ lib/
- │   │       ╰─ starchem/
- │   │           ├─ hydrogen.lua ··· got as require("starchem.hydrogen")
- │   │           ╰─ helium.lua ····· git as require("starchem.helium")
- │   ╰─ starfeats/
- │       ╰─ src/
- │           ├─ spots.lua ······ got as require("starfeats.spots")
- │           ╰─ flares.lua ····· git as require("starfeats.flares")
- ╰ luperc.lua
+ |
+ +- bin  <··· The place with your Lua scripts
+ |  |
+ |  +- main.lua
+ |  |
+ |  +- sun.lua
+ |
+ |
+ +- etc/  <··· Where the confs of your package are
+ |  |
+ |  +- template.tpl
+ |  |
+ |  +- anything.jpg
+ |
+ |
+ +- lib/  <··· Strictly Lua modules
+ |  |
+ |  +- asteroid.lua ··· got as require("asteroid")
+ |  |
+ |  +-planet.lua ··· got as require("planet")
+ |  |
+ |  +- satellite.lua ... git as require("planet.satellite")
+ |  |
+ |  +-comet.lua ... git as require("comet")
+ |
+ |
+ +- deps/  <··· Your dependencies go here
+ |  |
+ |  +- .rocks/ <··········· directory used to install rocks via Luarocks
+ |  |
+ |  starchem/
+ |  |
+ |  +- lib/
+ |     |
+ |     +- starchem/
+ |        |
+ |        +- hydrogen.lua ··· got as require("starchem.hydrogen")
+ |        |
+ |        +- helium.lua ····· git as require("starchem.helium")
+ |
+ |
+ +- starfeats/
+ |  |
+ |  +- src/
+ |     |
+ |     +- spots.lua ······ got as require("starfeats.spots")
+ |     |
+ |     +- flares.lua ····· git as require("starfeats.flares")
+ |
+ |
+ +- luperc.lua
 ```
 
 * `etc` folder is the place where you can add yout project assets. For a console
@@ -109,10 +133,10 @@ By now, a deps entry can be defined in two ways.
 
     deps = {
         starchem = "starchem/lib",
-    }   ╰──┬───╯   ╰─────┬──────╯
-           │             │
-           │             ╰─ path relative to the ./deps folder
-           ╰─ package name
+    }   \______/   \____________/
+           |             |
+           |             path relative to the ./deps folder
+           package name
 
 This indicates that when you use under your Lua script `require "starchem"` the
 code will be obtained from `./deps/starchem/lib/starchem/init.lua` or
@@ -133,12 +157,12 @@ package dir, but using the directory files as submodules.
 
     deps = {
        starfeats = { "somedir/src", cutoff=true },
-    }  ╰───┬───╯     ╰─────┬─────╯  ╰────┬────╯
-           │               │             │  use the moduels without
-           │               │             ╰─ a named package dir
-           │               │
-           │               ╰─ path relative to the ./deps folder
-           ╰─ package name
+    }  \_______/     \___________/  \_________/
+           |               |             use the modules without
+           |               |             a named package dir
+           |               |
+           |               path relative to the ./deps folder
+           package name
 
 Observe that the path relative to the deps folder can have any name. But for the
 sake of good structuring, it is better use a folder refering clearly to the
