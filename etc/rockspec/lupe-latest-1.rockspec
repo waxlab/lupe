@@ -2,7 +2,7 @@ package = "lupe"
 version = "latest-1"
 
 source = {
-   url = "git+ssh://git@github.com/luawax/lupe.git"
+   url = "git+https://git@github.com/luawax/lupe.git"
 }
 
 description = {
