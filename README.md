@@ -48,11 +48,11 @@ SolarSystem
  |  |
  |  +- asteroid.lua ··· got as require("asteroid")
  |  |
- |  +-planet.lua ··· got as require("planet")
+ |  +- planet.lua ··· got as require("planet")
  |  |
  |  +- satellite.lua ... git as require("planet.satellite")
  |  |
- |  +-comet.lua ... git as require("comet")
+ |  +- comet.lua ... git as require("comet")
  |
  |
  +- deps/  <··· Your dependencies go here
@@ -82,7 +82,7 @@ SolarSystem
  +- luperc.lua
 ```
 
-* `etc` folder is the place where you can add yout project assets. For a console
+* `etc` folder is the place where you can add your project assets. For a console
 program you can have files containing colorschemes, or data skeleton, or any
 other configuration you want to. Like in the Unix etc directory. If the project
 is related to a website, here you can put your templates, css, js etc.
