@@ -339,13 +339,12 @@ int main(int argc, char **argv) {
   } else {
     getcwd(target_path,PATH_MAX);
     mode = lupe_mode_cli;
-    if (strcmp(argv[1], "help") == 0 || strcmp(argv[1], "init") == 0) {
-      strcpy(lua.bin,     "lua");
-      strcpy(lua.version, "\0");
-    } else {
+    /* For other cli commands we need the location of luperc.lua file. */
+    if (argc > 1 && strcmp(argv[1],"help") != 0 && strcmp(argv[1], "init")) {
       resolve(target_path);
-      lua = whereis_lua();
     }
+    strcpy(lua.bin,     "lua");
+    strcpy(lua.version, "\0");
   }
   call_lupe_lua( lua, mode, argc, argv );
   return 0;

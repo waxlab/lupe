@@ -1,5 +1,5 @@
 package = "lupe"
-version = "latest-1"
+version = "1.0-1"
 
 source = {
    url = "git+https://git@github.com/waxlab/lupe.git",
