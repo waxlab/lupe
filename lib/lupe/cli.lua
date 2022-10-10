@@ -13,11 +13,11 @@
 --|
 
 local lupe   = require 'lupe'
-local waxpath = require 'wax.path'
+local fs = require 'wax.fs'
 local cat     = table.concat
 local unpack  = table.unpack or unpack
 local stderr = io.stderr
-local target = ('%s/%%s'):format(waxpath.getcwd())
+local target = ('%s/%%s'):format(fs.getcwd())
 
 --
 -- HELPER FUNCTIONS
@@ -37,12 +37,12 @@ local function cliwarn(msg, val)
 end
 
 local function mkdir(p)
-  return waxpath.mkdirs(target:format(p),"777")
+  return fs.mkdirs(target:format(p),"777")
 end
 
 local function mkfile(name, content, overwrite, mode)
   name = target:format(name)
-  if waxpath.isfile(name) and not overwrite then
+  if fs.isfile(name) and not overwrite then
     return
   end
   local f = io.open(name, 'w+')
@@ -50,7 +50,7 @@ local function mkfile(name, content, overwrite, mode)
     then
       f:write(confsubst(content))
       f:close()
-      if mode then waxpath.chmod(name, mode) end
+      if mode then fs.chmod(name, mode) end
     else
       clierror("%s: couldn't write to file", name)
   end
@@ -94,7 +94,7 @@ function command.init()
   'ex.run()'},'\n'), false, '755')
 
   -- Do not create if directory was not initialized
-  if not waxpath.isdir 'lib' then
+  if not fs.isdir 'lib' then
     mkdir 'lib'
     mkfile('lib/example.lua', cat ({
       'local module = {}',

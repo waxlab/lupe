@@ -17,7 +17,7 @@
 
 
 local lupe = require 'lupe'
-local path = require 'wax.path'
+local fs = require 'wax.fs'
 lupe.readconf()
 
 local dirpath = {
@@ -57,7 +57,7 @@ function lupe_searcher(module)
 
   for _,m in ipairs(dirpath) do
     file = m:format(modpath)
-    if path.isfile(file) then
+    if fs.isfile(file) then
       return function() return dofile(file) end
     end
     try[#try+1] = err_str:format(file)
@@ -75,7 +75,7 @@ function lupe_searcher(module)
 
     for _, m in ipairs(deppath) do
       file = m:format(dep, modpath)
-      if path.isfile(file) then return function() return dofile(file) end end
+      if fs.isfile(file) then return function() return dofile(file) end end
       try[#try+1] = err_str:format(file)
     end
 
