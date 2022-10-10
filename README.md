@@ -48,18 +48,18 @@ SolarSystem
  |  |
  |  +- asteroid.lua ··· got as require("asteroid")
  |  |
- |  +-planet.lua ··· got as require("planet")
+ |  +- planet.lua ··· got as require("planet")
  |  |
  |  +- satellite.lua ... git as require("planet.satellite")
  |  |
- |  +-comet.lua ... git as require("comet")
+ |  +- comet.lua ... git as require("comet")
  |
  |
  +- deps/  <··· Your dependencies go here
  |  |
  |  +- .rocks/ <··········· directory used to install rocks via Luarocks
  |  |
- |  starchem/
+ |  +- starchem/
  |  |
  |  +- lib/
  |     |
