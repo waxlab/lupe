@@ -205,10 +205,10 @@ function command.install()
   end
 end
 
-function command.remove()
+function command.remove(rockspec)
   local cmd = 'luarocks --lua-version %q remove %q'
   for k,_ in pairs(luabin) do
-    os.execute(cmd:format(k, config.rockspec))
+    os.execute(cmd:format(k, rockspec or config.rockspec))
   end
 end
 
