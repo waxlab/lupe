@@ -3,7 +3,7 @@ version = "latest-1"
 
 source = {
    url = "git+https://git@github.com/waxlab/lupe.git",
-   tag = "v1.0-1"
+   branch = "latest"
 }
 
 description = {

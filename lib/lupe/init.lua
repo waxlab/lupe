@@ -31,7 +31,7 @@ end
 --$ lupe.etc(name: string) : string
 --| Build a path for a file or directory in the `etc` folder under current
 --| Lupe project.
-function lupe.etc( name ) return ('%s/etc/%s'):format(lupe.root, name) end
+function lupe.etc( name ) return ('%setc/%s'):format(lupe.root, name) end
 
 
 -- Initialize global args if not initialized

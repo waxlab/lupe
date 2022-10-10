@@ -300,7 +300,7 @@ static void resolve(char *path) {
   } else {
     lupe_error("Error: '%s' must be a regular file", lupe_script);
   }
-  sprintf(lupe_rc, "%s/luperc.lua", lupe_root);
+  sprintf(lupe_rc, "%sluperc.lua", lupe_root);
   if (stat(lupe_rc, &st) != 0) {
     lupe_error("Error detecting '%s' : %s", lupe_rc, strerror(errno));
   }
