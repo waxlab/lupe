@@ -271,7 +271,7 @@ static void call_lupe_lua(struct lupe_lua lua, enum lupe_mode mode, int argc, ch
 static void set_lupe_script(char *path) {
   struct stat st;
   if (realpath(path,lupe_script) == NULL) {
-    lupe_error("Error accessing '%s' : %s", path, strerror(errno));
+    lupe_error("Error setting lupe_script from '%s' : %s", path, strerror(errno));
   }
 }
 
@@ -334,9 +334,8 @@ int main(int argc, char **argv) {
 
   if (argc > 1 && ispath(argv[1])) {
     mode = lupe_mode_dir;
-    strcpy(target_path, argv[1]);
-    if (realpath(target_path, target_path) == NULL) {
-      lupe_error("Error accessing '%s' : %s", target_path, strerror(errno));
+    if (realpath(argv[1], target_path) == NULL) {
+      lupe_error("Error resolving path to '%s' : %s", target_path, strerror(errno));
     }
     argc--; argv = &argv[1];
     resolve(argv[0]);
