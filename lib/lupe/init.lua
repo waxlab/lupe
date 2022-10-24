@@ -1,4 +1,5 @@
 local wax = require 'wax'
+local fs  = require 'wax.fs'
 
 --$ lupe variables
 --| * `lua`     : The current used Lua version.
@@ -16,6 +17,7 @@ local lupe = {
 --| * deps    : List of dependencies
 --| * rocks   : Luarocks rocks (same format as in rockspec `dependencies` key)
 
+
 --$ lupe.readconf()
 --| Setup lupe using the luperc file on already initialized dirs
 --| Resulting data is stored under `lupe.rc` table.
@@ -28,10 +30,12 @@ function lupe.readconf()
   return lupe.rc
 end
 
+
 --$ lupe.etc(name: string) : string
 --| Build a path for a file or directory in the `etc` folder under current
 --| Lupe project.
-function lupe.etc( name ) return ('%setc/%s'):format(lupe.root, name) end
+local etcdir = lupe.root..(lupe.root == '/' and 'etc' or '/etc')
+function lupe.etc( name ) return fs.buildpath(etcdir, name) end
 
 
 -- Initialize global args if not initialized
