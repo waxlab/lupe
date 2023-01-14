@@ -21,66 +21,66 @@ local fs = require 'wax.fs'
 lupe.readconf()
 
 local dirpath = {
-  ('%s/lib/%%s.lua'):format(lupe.root),
-  ('%s/lib/%%s/init.lua'):format(lupe.root),
+	('%s/lib/%%s.lua'):format(lupe.root),
+	('%s/lib/%%s/init.lua'):format(lupe.root),
 }
 local deppath = {
-  ('%s/deps/%%s/%%s.lua'):format(lupe.root),
-  ('%s/deps/%%s/%%s/init.lua'):format(lupe.root),
+	('%s/deps/%%s/%%s.lua'):format(lupe.root),
+	('%s/deps/%%s/%%s/init.lua'):format(lupe.root),
 }
 
 package.path = table.concat({
-  ('%s/deps/.rocks/share/lua/%s/?.lua'):format(lupe.root, lupe.lua),
-  ('%s/deps/.rocks/share/lua/%s/?/init.lua'):format(lupe.root, lupe.lua),
-  package.path
+	('%s/deps/.rocks/share/lua/%s/?.lua'):format(lupe.root, lupe.lua),
+	('%s/deps/.rocks/share/lua/%s/?/init.lua'):format(lupe.root, lupe.lua),
+	package.path
 },';')
 
 package.cpath = table.concat({
-  ('%s/deps/.rocks/lib/lua/%s/?.so'):format(lupe.root, lupe.lua),
-  package.cpath
+	('%s/deps/.rocks/lib/lua/%s/?.so'):format(lupe.root, lupe.lua),
+	package.cpath
 },';')
 
 local err_str = "\n\tno file '%s' (lupe)"
 
 local searchers =
-  lupe.lua == '5.1'
-  and package.loaders
-  or  package.searchers
+	lupe.lua == '5.1'
+	and package.loaders
+	or  package.searchers
 
 
 
 local
 function lupe_searcher(module)
-  local file
-  local try = {}
-  local modpath = module:gsub('%.','/')
+	local file
+	local try = {}
+	local modpath = module:gsub('%.','/')
 
-  for _,m in ipairs(dirpath) do
-    file = m:format(modpath)
-    if fs.isfile(file) then
-      return function() return dofile(file) end
-    end
-    try[#try+1] = err_str:format(file)
-  end
+	for _,m in ipairs(dirpath) do
+		file = m:format(modpath)
+		if fs.isfile(file) then
+			return function() return dofile(file) end
+		end
+		try[#try+1] = err_str:format(file)
+	end
 
-  local dotpos = module:find('.',0,true) or 0
-  local pack = module:sub(0, dotpos - 1)
-  local dep = lupe.rc.deps[pack]
-  if dep then
-    local cutoff = false
-    if type(dep) == 'table' then dep, cutoff = dep[1], (dep.cutoff or false) end
-    if cutoff then
-      modpath = module:sub(dotpos+1)
-    end
+	local dotpos = module:find('.',0,true) or 0
+	local pack = module:sub(0, dotpos - 1)
+	local dep = lupe.rc.deps[pack]
+	if dep then
+		local cutoff = false
+		if type(dep) == 'table' then dep, cutoff = dep[1], (dep.cutoff or false) end
+		if cutoff then
+			modpath = module:sub(dotpos+1)
+		end
 
-    for _, m in ipairs(deppath) do
-      file = m:format(dep, modpath)
-      if fs.isfile(file) then return function() return dofile(file) end end
-      try[#try+1] = err_str:format(file)
-    end
+		for _, m in ipairs(deppath) do
+			file = m:format(dep, modpath)
+			if fs.isfile(file) then return function() return dofile(file) end end
+			try[#try+1] = err_str:format(file)
+		end
 
-  end
-  return table.concat(try)
+	end
+	return table.concat(try)
 end
 
 table.insert(searchers, 1, lupe_searcher)
