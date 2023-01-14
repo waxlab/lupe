@@ -7,4 +7,5 @@
 /tree
 **/*.o
 **/*.so
-
+**/*.src.rock
+**/.ccls*
